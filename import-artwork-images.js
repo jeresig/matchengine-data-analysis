@@ -52,7 +52,7 @@ var findRelationship = function(original, matched, callback) {
 
 var queue = async.queue(function(data, callback) {
     if (data === false) {
-        queue._drain = function() {
+        queue.drain = function() {
             console.log("DONE");
             process.exit(0);
         };
@@ -78,7 +78,7 @@ var queue = async.queue(function(data, callback) {
                 }
                 console.log("   -- Created:", image._id);
                 // TODO: Are we inserting duplicate relationships?
-                findRelationship(artwork._id, image._id, function(err, rel) {
+                insertRelationship(artwork._id, image._id, function(err, rel) {
                     if (rel) {
                         console.log("   -- Relationship already exists.");
                         return callback();

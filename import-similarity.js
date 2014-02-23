@@ -101,7 +101,7 @@ var parseFile = function() {
         });
     });
 
-    queue._drain = function() {
+    queue.drain = function() {
         console.log("DONE");
         process.exit(0);
     };
