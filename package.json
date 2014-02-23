@@ -1,0 +1,24 @@
+{
+  "name": "matchengine-data-analysis",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeresig/matchengine-data-analysis"
+  },
+  "author": "John Resig <jeresig@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jeresig/matchengine-data-analysis/issues"
+  },
+  "dependencies": {
+    "node-neo4j": "~2.0.0-RC5",
+    "async": "~0.2.10",
+    "argparse": "~0.1.15",
+    "csv-streamify": "~0.9.0"
+  }
+}
