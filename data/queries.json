@@ -1,0 +1,22 @@
+{
+    "confirm-known": {
+        "title": "Images that confirm known relationships",
+        "query": "MATCH (ff:frick)-[:known]-(:zeri)--(z:Image)-[:match]-(f:Image)--(ff) RETURN distinct f,z"
+    },
+    "failed-confirm-known": {
+        "title": "Images that failed to confirm a known relationship",
+        "query": "MATCH (f:Image)--(ff:frick)-[:known]-(zz:zeri)--(z:Image) WHERE not(ff--(:Image)-[:match]-(:Image)--zz) RETURN distinct f,z"
+    },
+    "frick-frick": {
+        "title": "Frick-Frick Matches",
+        "query": "MATCH (aa:Artwork)--(a:frick)-[:match]-(c:frick)--(cc:Artwork) WHERE not(aa=cc) and id(a) < id(c) RETURN distinct a, c"
+    },
+    "zeri-zeri": {
+        "title": "Zeri-Zeri Matches",
+        "query": "MATCH (aa:Artwork)--(a:zeri)-[:match]-(c:zeri)--(cc:Artwork) WHERE not(aa=cc) and id(a) < id(c) RETURN distinct a, c"
+    },
+    "frick-zeri": {
+        "title": "Frick-Zeri Matches",
+        "query": "MATCH (a:frick)-[:match]-(c:zeri) RETURN distinct a, c"
+    }
+}
