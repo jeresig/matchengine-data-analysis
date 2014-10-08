@@ -5,7 +5,8 @@ var ArgumentParser = require("argparse").ArgumentParser;
 var db = new neo4j("http://localhost:7474");
 
 var csvParser = csv({
-    objectMode: true
+    objectMode: true,
+    delimiter: "\t"
 });
 
 var argparser = new ArgumentParser({
@@ -30,7 +31,7 @@ var getID = function(data, callback) {
 };
 
 var processNode = function(data, label, callback) {
-    console.log("Finding", data.id);
+    console.log("Updating", data.id, label);
 
     getID(data, function(err, id) {
         if (!id) {
@@ -55,7 +56,7 @@ var parseFile = function() {
         .on("data", function(data) {
             this.pause();
 
-            process({
+            processNode({
                 id: data[0],
                 source: args.source
             }, data[1], function() {
