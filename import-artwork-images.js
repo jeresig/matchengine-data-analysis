@@ -23,62 +23,71 @@ var args = argparser.parseArgs();
 var artworkLabels = ["Artwork", args.source];
 var imageLabels = ["Image", args.source];
 
-var createOrFind = function(data, labels, callback) {
-    db.cypherQuery("MATCH (n:" + labels[0] + " {data}) RETURN n", {data: data}, function(err, result) {
-        if (err || result.data.length === 0) {
-            db.insertNode(data, labels, function(err, node) {
-                if (err) {
-                    console.log(" -- ERROR:", err);
-                    return callback(err);
-                }
-                callback(null, node);
-            });
-            return;
-        }
+var formatLabels = function(labels) {
+    return labels.map(function(label) {
+        return ":`" + label + "`";
+    }).join("");
+};
 
-        callback(err, result.data[0]);
-    });
+var createOrFind = function(data, labels, callback) {
+    db.cypherQuery("MATCH (n" + formatLabels(labels) +
+        " {id: {data}.id, source: {data}.source}) RETURN n LIMIT 1",
+        {data: data},
+        function(err, result) {
+            if (err || result.data.length === 0) {
+                db.insertNode(data, labels, function(err, node) {
+                    if (err) {
+                        console.log(" -- ERROR:", err);
+                        return callback(err);
+                    }
+                    callback(null, node);
+                });
+                return;
+            }
+
+            callback(err, result.data[0]);
+        });
 };
 
 var findRelationship = function(original, matched, callback) {
-    db.cypherQuery("START a=node({original}), b=node({matched}) MATCH a-[n:photo]->b RETURN n LIMIT 1", {original: original, matched: matched}, function(err, result) {
-        if (err || result.data.length === 0) {
-            return callback();
-        }
+    db.cypherQuery("START a=node({original}), b=node({matched}) " +
+        "MATCH a-[n:photo]->b RETURN n LIMIT 1",
+        {original: original, matched: matched},
+        function(err, result) {
+            if (err || result.data.length === 0) {
+                return callback();
+            }
 
-        callback(err, result.data[0]._id);
-    });
+            callback(err, result.data[0]._id);
+        });
 };
 
-var queue = async.queue(function(data, callback) {
-    if (data === false) {
-        queue.drain = function() {
-            console.log("DONE");
-            process.exit(0);
-        };
-
-        return callback();
-    }
-
+var processArtwork = function(data, callback) {
     var artworkData = {id: data.artwork, source: args.source};
+    var thisArtworkLabels = data.labels.concat(artworkLabels);
+
     console.log("Creating artwork", data.artwork);
-    createOrFind(artworkData, artworkLabels, function(err, artwork) {
+    createOrFind(artworkData, thisArtworkLabels, function(err, artwork) {
         if (err) {
             console.log(" -- ERROR:", err);
             return callback(err);
         }
+
         console.log(" -- Created:", artwork._id);
-        async.eachLimit(data.images, 3, function(imageID, callback) {
-            console.log(" -- Inserting image", imageID);
+        async.eachLimit(data.images, 1, function(imageID, callback) {
             var imageData = {id: imageID, source: args.source};
-            createOrFind(imageData, imageLabels, function(err, image) {
+            var thisImageLabels = data.labels.concat(imageLabels);
+
+            console.log(" -- Inserting image", imageID);
+            createOrFind(imageData, thisImageLabels, function(err, image) {
                 if (err) {
                     console.log("   -- ERROR:", err);
                     return callback(err);
                 }
+
                 console.log("   -- Created:", image._id);
-                // TODO: Are we inserting duplicate relationships?
-                insertRelationship(artwork._id, image._id, function(err, rel) {
+
+                findRelationship(artwork._id, image._id, function(err, rel) {
                     if (rel) {
                         console.log("   -- Relationship already exists.");
                         return callback();
@@ -91,24 +100,40 @@ var queue = async.queue(function(data, callback) {
             });
         }, callback);
     });
-}, 1);
+};
 
 var parseFile = function() {
     console.log("Parsing CSV file...");
 
+    var count = 0;
+
     process.stdin
         .pipe(csvParser)
         .on("data", function(data) {
-            var artwork = data[0];
-            var images = data.slice(1);
+            this.pause();
 
-            queue.push({
+            var artwork = data[0];
+            var label = data[1];
+            var images = data.slice(2);
+
+            processArtwork({
                 artwork: artwork,
+                labels: label ? [label] : [],
                 images: images
-            });
+            }, function() {
+                // Every 100, pause for a second
+                if (++count % 100 === 0) {
+                    console.log("Waiting...");
+                    setTimeout(function() {
+                        this.resume();
+                    }.bind(this), 1000);
+                } else {
+                    this.resume();
+                }
+            }.bind(this));
         })
-        .on("close", function() {
-            queue.push(false);
+        .on("end", function() {
+            console.log("DONE");
         });
 };
 

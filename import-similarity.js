@@ -37,7 +37,7 @@ var findRelationship = function(original, matched, callback) {
 };
 
 var hasRelationship = function(origData, matchData, callback) {
-    db.cypherQuery("START MATCH ({origData})-[n:match]->({matchData}) RETURN n LIMIT 1", {origData: origData, matchData: matchData}, function(err, result) {
+    db.cypherQuery("START MATCH (a:Image {origData})-[n:match]->(b:Image {matchData}) RETURN n LIMIT 1", {origData: origData, matchData: matchData}, function(err, result) {
         if (err || result.data.length === 0) {
             return callback();
         }
