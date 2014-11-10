@@ -15,11 +15,7 @@ xmlDoc.find("//SCHEDA").forEach(function(node) {
     }
 
     var path = node.get(".//FOTO").text();
-
     var imageID = /\/([\w\d]+).jpg/.exec(path)[1];
-
-    // Entry ID:
-    // node.attr("sercdf").value()
 
     map[id].push(imageID);
 });
