@@ -1,26 +1,33 @@
-var es = require("event-stream");
+var csv = require("csv-streamify");
+var yr = require("yearrange");
 
-var map = {};
+var dates = {};
 
 process.stdin
-    .pipe(es.split("\n"))
+    .pipe(csv({
+        objectMode: true,
+        delimiter: "\t",
+        columns: true
+    }))
     .on("data", function(data) {
-        var file = data.trim().replace(/.jpg/, "");
+        var path = (data["PATH"] || "").trim();
+        var date = data["WORK DATE"];
 
-        if (!file) {
+        if (/([^\/]+).tif/.test(path)) {
+            path = RegExp.$1;
+        } else {
             return;
         }
 
-        var id = /^\d+/.exec(file)[0];
-
-        if (!map[id]) {
-            map[id] = [];
+        if (!(date in dates)) {
+            var range = yr.parse(date);
+            if (range && range.start && range.start > 1000) {
+                dates[date] = Math.floor(range.start / 100) + 1;
+            } else {
+                dates[date] = 0;
+            }
         }
 
-        map[id].push(file);
-    })
-    .on("close", function() {
-        Object.keys(map).sort().forEach(function(id) {
-            console.log([id].concat(map[id]).join(","));
-        });
+        var artworkID = /^\d+/.exec(path)[0];
+        console.log(["frick", artworkID, path, dates[date]].join(","));
     });
